@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบรายงานผลการดำเนินการออนไลน์</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { 
+            font-family: 'Sarabun', sans-serif; 
+        }
+        /* อนิเมชันสำหรับหน้าต่างแจ้งเตือน (Smooth & Fluid Pop-up) */
+        @keyframes modalBounceIn {
+            0% { opacity: 0; transform: scale(0.9 test) translateY(20px); }
+            60% { opacity: 0.9; transform: scale(1.02) translateY(-4px); }
+            100% { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        /* อนิเมชันสำหรับฉากหลังโปร่งแสง */
+        @keyframes fadeInOverlay {
+            from { opacity: 0; backdrop-filter: blur(0px); }
+            to { opacity: 1; backdrop-filter: blur(4px); }
+        }
+        .animate-overlay { animation: fadeInOverlay 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
+        .animate-modal { animation: modalBounceIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+        
+        /* สไตล์เสริมความลื่นไหลเมื่อเปลี่ยนสถานะการโหลด */
+        .loading-spinner {
+            border-top-color: #facc15; /* สีเหลือง Yellow-400 */
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col justify-between antialiased">
+
+    <div class="py-12 px-4 flex-grow">
+        <div class="max-w-3xl mx-auto bg-white rounded-3xl shadow-2xl overflow-hidden border border-gray-200/80 transition-all duration-300">
+            
+            <div class="bg-gradient-to-br from-purple-950 via-purple-900 to-gray-800 px-8 py-10 text-white text-center relative overflow-hidden border-b-4 border-yellow-400">
+                <div class="absolute top-0 right-0 -mt-6 -mr-6 w-32 h-32 bg-purple-700/20 rounded-full blur-2xl"></div>
+                <div class="absolute bottom-0 left-0 -mb-6 -ml-6 w-32 h-32 bg-yellow-500/10 rounded-full blur-2xl"></div>
+                
+                <div class="mb-4 inline-block relative group">
+                    <div class="absolute inset-0 bg-yellow-400 rounded-full blur-md opacity-40 group-hover:opacity-70 transition duration-300"></div>
+                    <div class="relative bg-white p-2 rounded-full shadow-md w-24 h-24 mx-auto flex items-center justify-center border border-gray-200">
+                        <img src="https://lh3.googleusercontent.com/d/18pdbdUQk06D4LihDnzOFREHbEODTd9PX" class="max-w-full max-h-full object-contain rounded-full">
+                    </div>
+                </div>
+
+                <h1 class="text-2xl md:text-3xl font-bold tracking-wide text-white drop-shadow-sm">ระบบรายงานผลการดำเนินการ</h1>
+                <p class="text-yellow-300 text-sm mt-2 font-medium tracking-wide">โรงเรียนหลวงพ่อปานคลองด่านอนุสรณ์</p>
+                <p class="text-gray-300 text-xs mt-1 font-light">กรอกข้อมูลเพื่อบันทึกและสร้างเอกสารรายงานสรุปผลการปฏิบัติงานอัตโนมัติ</p>
+            </div>
+
+            <form id="reportForm" class="p-8 space-y-6">
+                
+                <div class="space-y-2">
+                    <label class="block text-sm font-semibold text-gray-800 flex items-center gap-2">
+                        <span class="flex items-center justify-center w-5 h-5 rounded-full bg-purple-700 text-white text-xs">1</span>
+                        แนบรูปภาพผลการดำเนินงาน <span class="text-xs font-normal text-gray-500">(สัดส่วน 16:9 อัตโนมัติ / ไม่เกิน 5 MB)</span>
+                    </label>
+                    <div class="flex justify-center items-center w-full">
+                        <label for="imageInput" class="flex flex-col justify-center items-center w-full h-44 bg-gray-50 rounded-2xl border-2 border-gray-300 border-dashed cursor-pointer hover:bg-purple-50/40 hover:border-purple-600 transition-all duration-300 group">
+                            <div class="flex flex-col justify-center items-center pt-5 pb-6 text-center px-4">
+                                <div class="p-3 bg-purple-50 rounded-full text-purple-700 group-hover:scale-110 group-hover:bg-yellow-100 group-hover:text-yellow-600 transition-all duration-300 mb-2">
+                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                </div>
+                                <p class="mb-1 text-sm text-gray-700 font-medium"><span class="text-purple-700 font-semibold group-hover:text-purple-900">คลิกเพื่ออัปโหลดรูปภาพ</span> หรือลากไฟล์มาวาง</p>
+                                <p class="text-xs text-gray-400">รองรับไฟล์มาตรฐาน JPG, JPEG, PNG</p>
+                            </div>
+                            <input type="file" id="imageInput" accept="image/*" required class="hidden" />
+                        </label>
+                    </div>
+                    <div id="previewContainer" class="mt-3 hidden bg-gray-50 p-4 rounded-2xl border border-gray-200">
+                        <p class="text-xs font-semibold text-purple-800 mb-2 text-center">ตัวอย่างการจัดสัดส่วนภาพแบบ 16:9 ในเล่มรายงาน:</p>
+                        <div class="max-w-md mx-auto aspect-[16/9] overflow-hidden rounded-xl shadow-md border border-gray-300">
+                            <img id="imagePreview" src="#" alt="Preview" class="w-full h-full object-cover">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-gray-50 p-5 rounded-2xl border border-gray-200 space-y-4 shadow-sm">
+                    <h3 class="text-sm font-bold text-purple-900 flex items-center gap-2">
+                        <span class="flex items-center justify-center w-5 h-5 rounded-full bg-purple-700 text-white text-xs">2</span>
+                        ข้อมูลผู้รายงานตนลงชื่อเอกสาร
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 mb-1">กลุ่มสาระการเรียนรู้ / ฝ่ายงาน</label>
+                            <select id="departmentSelect" required class="w-full border border-gray-300 rounded-xl p-3 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/30 focus:border-purple-600 transition-all">
+                                <option value="">-- กำลังโหลดข้อมูลกลุ่มสาระ --</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 mb-1">ชื่อ-นามสกุล บุคลากร</label>
+                            <select id="nameSelect" required disabled class="w-full border border-gray-300 rounded-xl p-3 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/30 focus:border-purple-600 transition-all disabled:bg-gray-100 disabled:text-gray-400">
+                                <option value="">-- กรุณาเลือกกลุ่มสาระก่อน --</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-1.5">
+                    <div class="flex justify-between items-center">
+                        <label class="block text-sm font-semibold text-gray-800 flex items-center gap-2">
+                            <span class="flex items-center justify-center w-5 h-5 rounded-full bg-purple-700 text-white text-xs">3</span>
+                            สรุปสาระสำคัญของการฝึกอบรม/ศึกษาดูงานดังนี้
+                        </label>
+                        <span id="summaryCounter" class="text-xs font-semibold text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full transition-colors duration-300">0 / 2,000 อักขระ</span>
+                    </div>
+                    <textarea id="summaryText" rows="6" maxlength="2000" required
+                              class="w-full border border-gray-300 rounded-xl p-4 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/30 focus:border-purple-600 transition-all placeholder-gray-400"
+                              placeholder="พิมพ์สรุปรายละเอียดเนื้อหาองค์ความรู้ที่สำคัญที่นี่..."></textarea>
+                </div>
+
+                <div class="space-y-1.5">
+                    <div class="flex justify-between items-center">
+                        <label class="block text-sm font-semibold text-gray-800 flex items-center gap-2">
+                            <span class="flex items-center justify-center w-5 h-5 rounded-full bg-purple-700 text-white text-xs">4</span>
+                            ประโยชน์ที่ได้รับ
+                        </label>
+                        <span id="benefitsCounter" class="text-xs font-semibold text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full transition-colors duration-300">0 / 2,000 อักขระ</span>
+                    </div>
+                    <textarea id="benefitsText" rows="6" maxlength="2000" required
+                              class="w-full border border-gray-300 rounded-xl p-4 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/30 focus:border-purple-600 transition-all placeholder-gray-400"
+                              placeholder="พิมพ์อธิบายรายการผลประโยชน์และคุณค่าที่ได้รับต่อตนเองหรือองค์กร..."></textarea>
+                </div>
+
+                <div class="pt-2">
+                    <button type="submit" id="submitBtn" class="w-full bg-gradient-to-r from-purple-700 via-purple-800 to-gray-800 hover:from-purple-800 hover:to-purple-900 text-white font-semibold py-4 px-6 rounded-xl shadow-lg shadow-purple-900/20 hover:shadow-purple-900/30 transition-all duration-300 transform hover:-translate-y-0.5 active:translate-y-0 text-base tracking-wide border-b-4 border-purple-950 active:border-b-0">
+                        บันทึกรายงานผล
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <footer class="bg-gray-800 text-gray-400 py-4 text-center text-xs border-t-2 border-yellow-400 tracking-wide">
+        &copy; 2026 ระบบรายงานผลการดำเนินการออนไลน์ด้วยระบบอัตโนมัติ • โรงเรียนหลวงพ่อปานคลองด่านอนุสรณ์
+    </footer>
+
+    <div id="loadingOverlay" class="fixed inset-0 bg-gray-950/70 z-40 flex flex-col justify-center items-center text-white hidden animate-overlay">
+        <div class="relative flex items-center justify-center mb-4">
+            <div class="animate-spin rounded-full h-16 w-16 border-4 border-purple-300 loading-spinner"></div>
+            <div class="absolute w-8 h-8 bg-yellow-400 rounded-full animate-pulse opacity-75"></div>
+        </div>
+        <p id="loadingMessage" class="text-base font-semibold tracking-wide text-yellow-300 drop-shadow">กำลังดาวน์โหลดข้อมูลฐานระบบ...</p>
+        <p class="text-xs text-gray-400 mt-1 font-light">โปรดรอสักครู่ ระบบกำลังทำงานอย่างปลอดภัย</p>
+    </div>
+
+    <div id="customModal" class="fixed inset-0 bg-gray-950/70 z-50 flex justify-center items-center px-4 hidden animate-overlay">
+        <div class="bg-white rounded-3xl shadow-2xl max-w-sm w-full p-6 text-center animate-modal border border-gray-100 relative overflow-hidden">
+            <div class="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-purple-700 to-yellow-400"></div>
+            
+            <div id="modalIconContainer" class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100 mb-4 transition-all duration-300">
+                <svg id="iconSuccess" class="h-9 w-9 text-green-600 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                <svg id="iconError" class="h-9 w-9 text-red-600 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </div>
+            
+            <h3 id="modalTitle" class="text-xl font-bold text-gray-800 mb-2 tracking-wide">สถานะการทำงาน</h3>
+            <p id="modalMessage" class="text-sm text-gray-600 leading-relaxed mb-6">รายละเอียดข้อความแจ้งเตือน</p>
+            
+            <div id="modalActionButtons" class="flex flex-col gap-2">
+                <a id="modalDocLink" href="#" target="_blank" class="hidden w-full bg-purple-50 text-purple-700 hover:bg-purple-100 font-bold py-3 px-4 rounded-xl text-sm transition-all duration-200 shadow-sm border border-purple-200 text-center">
+                    📄 เปิดดูไฟล์รายงาน (Google Docs)
+                </a>
+                <button type="button" onclick="closeModal()" class="w-full bg-gray-800 hover:bg-gray-900 text-white font-semibold py-3 px-4 rounded-xl text-sm transition-all duration-200 shadow-md transform hover:scale-[1.01]">
+                    ตกลง / ปิดหน้าต่าง
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 🔗 สำคัญ: นำ URL ของ Web App จากการ Deploy ใน Google Apps Script มาใส่ที่นี่
+        const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwgaaJqRtQF8kmBEaejnZYcSHQJkHeE7pSH2amwqSLn1NI6J8Gc8ZMDVL-1KxBQAwZ3/exec';
+        
+        let staffDataStructure = {};
+
+        // ฟังก์ชันควบคุมการเปิด/ปิด ป็อปอัปแจ้งเตือนตรงกลางจอ
+        function showModal(isSuccess, title, message, docUrl = null) {
+            const modal = document.getElementById('customModal');
+            const iconContainer = document.getElementById('modalIconContainer');
+            const iconSuccess = document.getElementById('iconSuccess');
+            const iconError = document.getElementById('iconError');
+            const titleEl = document.getElementById('modalTitle');
+            const msgEl = document.getElementById('modalMessage');
+            const docLink = document.getElementById('modalDocLink');
+
+            titleEl.textContent = title;
+            msgEl.innerHTML = message.replace(/\n/g, '<br>'); 
+            
+            if (isSuccess) {
+                iconContainer.className = "mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100 mb-4 shadow-sm";
+                iconSuccess.classList.remove('hidden');
+                iconError.classList.add('hidden');
+                if (docUrl) {
+                    docLink.href = docUrl;
+                    docLink.classList.remove('hidden');
+                } else {
+                    docLink.classList.add('hidden');
+                }
+            } else {
+                iconContainer.className = "mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100 mb-4 shadow-sm";
+                iconSuccess.classList.add('hidden');
+                iconError.classList.remove('hidden');
+                docLink.classList.add('hidden');
+            }
+
+            modal.classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('customModal').classList.add('hidden');
+        }
+
+        // ฟังก์ชันเปิด/ปิด หน้าต่างสถานะการโหลดข้อมูล
+        function toggleLoading(show, message = 'กำลังประมวลผล...') {
+            const overlay = document.getElementById('loadingOverlay');
+            const msgEl = document.getElementById('loadingMessage');
+            msgEl.textContent = message;
+            if (show) {
+                overlay.classList.remove('hidden');
+            } else {
+                overlay.classList.add('hidden');
+            }
+        }
+
+        // โหลดข้อมูลกลุ่มสาระและรายชื่อจริงจาก Google Sheet แบบเรียลไทม์เมื่อเปิดหน้าเว็บ
+        window.addEventListener('DOMContentLoaded', async () => {
+            toggleLoading(true, 'กำลังเชื่อมต่อและดึงข้อมูลรายชื่อ');
+            try {
+                const response = await fetch(`${WEB_APP_URL}?action=getStaff`);
+                const result = await response.json();
+                
+                if (result.status === 'success') {
+                    staffDataStructure = result.data;
+                    initDepartmentDropdown();
+                } else {
+                    showModal(false, 'ไม่สามารถเชื่อมต่อฐานข้อมูล', 'เกิดข้อผิดพลาดจากฐานข้อมูล: ' + result.message);
+                    useFallbackData();
+                }
+            } catch (error) {
+                console.error('Error fetching dynamic staff data:', error);
+                showModal(false, 'การเชื่อมต่อล้มเหลว', 'ไม่สามารถดึงข้อมูลบุคลากรแบบเรียลไทม์ได้ ระบบจะเปิดใช้งานข้อมูลสำรองชั่วคราว');
+                useFallbackData();
+            } finally {
+                toggleLoading(false);
+            }
+        });
+
+        // ฟังก์ชันตั้งค่าดร็อปดาวน์กลุ่มสาระเริ่มต้น
+        function initDepartmentDropdown() {
+            const deptSelect = document.getElementById('departmentSelect');
+            deptSelect.innerHTML = '<option value="">-- เลือกกลุ่มสาระ --</option>';
+            
+            const departments = Object.keys(staffDataStructure);
+            if (departments.length === 0) {
+                deptSelect.innerHTML = '<option value="">-- ไม่พบข้อมูลกลุ่มสาระใน Sheet --</option>';
+                return;
+            }
+
+            departments.forEach(dept => {
+                const option = document.createElement('option');
+                option.value = dept;
+                option.textContent = dept;
+                deptSelect.appendChild(option);
+            });
+        }
+
+        // ทำงานเมื่อมีการคลิกเปลี่ยน "กลุ่มสาระ"
+        document.getElementById('departmentSelect').addEventListener('change', function() {
+            const nameSelect = document.getElementById('nameSelect');
+            const selectedDept = this.value;
+            
+            nameSelect.innerHTML = '<option value="">-- เลือกชื่อ-นามสกุล --</option>';
+            
+            if (selectedDept && staffDataStructure[selectedDept]) {
+                nameSelect.disabled = false;
+                staffDataStructure[selectedDept].forEach(name => {
+                    const option = document.createElement('option');
+                    option.value = name;
+                    option.textContent = name;
+                    nameSelect.appendChild(option);
+                });
+            } else {
+                nameSelect.disabled = true;
+                nameSelect.innerHTML = '<option value="">-- กรุณาเลือกกลุ่มสาระก่อน --</option>';
+            }
+        });
+
+        // ตรวจสอบขนาดไฟล์และแสดงภาพพรีวิว
+        document.getElementById('imageInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const maxSize = 5 * 1024 * 1024;
+                if (file.size > maxSize) {
+                    showModal(false, 'ขนาดไฟล์รูปภาพใหญ่เกินไป', `ไฟล์ที่คุณเลือกมีขนาด ${(file.size / (1024 * 1024)).toFixed(2)} MB\nกรุณาเลือกรูปภาพที่มีขนาดไม่เกิน 5 MB เพื่อให้ระบบทำงานได้อย่างรวดเร็วครับ`);
+                    this.value = ''; 
+                    document.getElementById('previewContainer').classList.add('hidden');
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    const container = document.getElementById('previewContainer');
+                    const img = document.getElementById('imagePreview');
+                    img.src = event.target.result;
+                    container.classList.remove('hidden');
+                }
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // ฟังก์ชันนับจำนวนอักขระแบบเรียลไทม์ (ปรับปรุงการแจ้งเตือนสไตล์ ม่วง-เหลือง)
+        function configureTextCounter(textareaId, counterId) {
+            const textarea = document.getElementById(textareaId);
+            const counter = document.getElementById(counterId);
+            
+            textarea.addEventListener('input', () => {
+                const length = textarea.value.length;
+                counter.textContent = `${length.toLocaleString()} / 2,000 อักขระ`;
+                
+                if (length >= 1900) {
+                    counter.className = "text-xs font-bold text-red-500 bg-red-50 px-2 py-0.5 rounded-full border border-red-200";
+                } else if (length >= 1500) {
+                    counter.className = "text-xs font-semibold text-yellow-600 bg-yellow-50 px-2 py-0.5 rounded-full border border-yellow-200";
+                } else {
+                    counter.className = "text-xs font-semibold text-purple-700 bg-purple-50 px-2 py-0.5 rounded-full border border-purple-100";
+                }
+            });
+        }
+        configureTextCounter('summaryText', 'summaryCounter');
+        configureTextCounter('benefitsText', 'benefitsCounter');
+
+        // ฟังก์ชันส่งข้อมูลทั้งหมดไปยังระบบเบื้องหลัง (Submit Form)
+        document.getElementById('reportForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = true;
+            toggleLoading(true, 'กำลังอัปโหลดรูปภาพ บันทึกตาราง และเร่งสร้างรายงาน');
+            
+            const imageFile = document.getElementById('imageInput').files[0];
+            let imageBytes = '';
+            let imageName = '';
+            
+            if (imageFile) {
+                const convertToBase64 = file => new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.readAsDataURL(file);
+                    reader.onload = () => resolve(reader.result);
+                    reader.onerror = error => reject(error);
+                });
+                imageBytes = await convertToBase64(imageFile);
+                imageName = imageFile.name;
+            }
+
+            const payload = {
+                department: document.getElementById('departmentSelect').value,
+                name: document.getElementById('nameSelect').value,
+                summary: document.getElementById('summaryText').value,
+                benefits: document.getElementById('benefitsText').value,
+                imageBytes: imageBytes,
+                imageName: imageName
+            };
+
+            try {
+                const response = await fetch(WEB_APP_URL, {
+                    method: 'POST',
+                    body: JSON.stringify(payload)
+                });
+                
+                const result = await response.json();
+                
+                if (result.status === 'success') {
+                    showModal(
+                        true, 
+                        '🎉 บันทึกรายงานสำเร็จ!', 
+                        'ระบบได้ทำการจัดเก็บข้อมูลลงฐานข้อมูลและสร้างไฟล์เอกสารรายงานผลของคุณเรียบร้อยแล้ว', 
+                        result.docUrl
+                    );
+                    
+                    document.getElementById('reportForm').reset();
+                    document.getElementById('previewContainer').classList.add('hidden');
+                    document.getElementById('summaryCounter').textContent = '0 / 2,000 อักขระ';
+                    document.getElementById('summaryCounter').className = "text-xs font-semibold text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full";
+                    document.getElementById('benefitsCounter').textContent = '0 / 2,000 อักขระ';
+                    document.getElementById('benefitsCounter').className = "text-xs font-semibold text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full";
+                    document.getElementById('nameSelect').disabled = true;
+                } else {
+                    showModal(false, '❌ เกิดข้อผิดพลาดจากระบบ', 'รายละเอียด: ' + result.message);
+                }
+            } catch (error) {
+                showModal(false, '❌ การส่งข้อมูลล้มเหลว', 'ไม่สามารถเชื่อมต่อกับ Web App ได้ โปรดตรวจสอบการตั้งค่าสิทธิ์ Web App (ต้องเป็น Everyone)\n\nรายละเอียด: ' + error.toString());
+            } finally {
+                submitBtn.disabled = false;
+                toggleLoading(false);
+            }
+        });
+
+        // ข้อมูลสำรองกรณีเชื่อมต่อสคริปต์ล้มเหลว (Fallback Data)
+        function useFallbackData() {
+            staffDataStructure = {
+                "กลุ่มสาระวิทยาศาสตร์และเทคโนโลยี": ["ข้อมูลตัวอย่าง นายสมชาย สายวิทย์"],
+                "กลุ่มสาระคณิตศาสตร์": ["ข้อมูลตัวอย่าง นางสาวคิดเลข เร็วไว"]
+            };
+            initDepartmentDropdown();
+        }
+    </script>
+</body>
+</html>
